@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.smbms.dao.user.UserMapper">
+	<!-- 使用用户编码和用户密码登录 -->
+	<select id="login" resultType="User">
+		SELECT * FROM smbms_user WHERE userCode = #{userCode} AND userPassword = #{userPassword}
+	</select>
+	
+	<!-- 检查用户名和密码是否错误 -->
+	<select id="checkCodeAndPwd" resultType="User">
+		SELECT * FROM smbms_user where userCode = #{userCode}
+	</select>
+	
+	<!-- 根据用户名和角色id查询总记录 -->
+	<select id="getTotalCount" resultType="Integer">
+		SELECT COUNT(*) FROM smbms_user 
+		<where>
+			<if test="userName != null and userName != ''">AND userName like CONCAT('%',#{userName},'%')</if>
+			<if test="roleId != null and roleId != 0">AND userRole = #{roleId}</if>
+		</where>
+	</select>
+	
+	<resultMap type="User" id="NameAndRoleId">
+		<id property="id" column="id"/>
+		<result property="userCode" column="userCode"/>
+		<result property="userName" column="userName"/>
+		<result property="userPassword" column="userPassword"/>
+		<result property="gender" column="gender"/>
+		<result property="birthday" column="birthday"/>
+		<result property="phone" column="phone"/>
+		<result property="address" column="address"/>
+		<result property="userRole" column="userRole"/>
+		<result property="creationDate" column="creationDate"/>
+		<result property="age" column="age"/>
+		<association property="role" javaType="Role">
+			<id property="id" column="r_id"></id>
+			<result property="roleCode" column="roleCode"/>
+			<result property="roleName" column="roleName"/>
+		</association>
+	</resultMap>
+	
+	<!-- 根据用户名和角色id查询用户数据 -->
+	<select id="getUserList" resultMap="NameAndRoleId">
+		SELECT u.*,r.roleName,r.roleCode,r.id r_id,FLOOR((DATEDIFF(NOW(),birthday))/365) age 
+		FROM smbms_user u,smbms_role r WHERE u.userRole = r.id
+		<if test="userName != null and userName != ''">AND userName like CONCAT('%',#{userName},'%') </if>
+		<if test="roleId != null and roleId != 0">AND userRole = #{roleId}</if>
+		ORDER BY creationDate ASC LIMIT #{from},#{pageSize}
+	</select>
+	
+	<!-- 查询角色信息列表 -->
+	<select id="getRoleList" resultType="Role">
+		SELECT * FROM smbms_role
+	</select>
+</mapper>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.smbms.dao.provider.ProviderMapper">
+	<!-- 按照条件查询供应商记录 -->
+	<select id="getProCount" resultType="int">
+		SELECT COUNT(*) FROM smbms_provider
+		<where>
+			<if test="proCode != null">
+				AND proCode like CONCAT('%',#{proCode},'%')
+			</if>
+			<if test="proName != null">
+				AND proName like CONCAT('%',#{proName},'%')
+			</if>
+		</where>
+	</select>
+	
+	<!-- 按照条件查询供应商列表分页显示 -->
+	<select id="getProList" resultType="Provider">
+		SELECT * FROM smbms_provider
+		<where>
+			<if test="proCode != null">
+				AND proCode like CONCAT('%',#{proCode},'%')
+			</if>
+			<if test="proName != null">
+				AND proName like CONCAT('%',#{proName},'%')
+			</if>
+		</where>
+		ORDER BY creationDate ASC LIMIT #{from},#{pageSize}
+	</select>
+</mapper>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context-3.2.xsd
+	http://www.springframework.org/schema/tx
+	http://www.springframework.org/schema/tx/spring-tx-3.2.xsd	
+	http://www.springframework.org/schema/aop
+	http://www.springframework.org/schema/aop/spring-aop-3.2.xsd">
+	
+	<!-- 引入database.properties -->
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location">
+			<value>classpath:database.properties</value>
+		</property>
+	</bean>
+	<!-- 1.配置DataSource -->
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource">
+		<property name="driverClassName" value="${driver}"/>
+		<property name="url" value="${url}"/>
+		<property name="username" value="${username}"/>
+		<property name="password" value="${password}"/>
+	</bean>
+	<!-- 2.配置SqlSessionFactoryBean -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<!-- 2.1 引入数据源组件 -->
+		<property name="dataSource" ref="dataSource"/>
+		<!-- 2.2 引入mybatis配置文件 -->
+		<property name="configLocation" value="classpath:mybatis-config.xml"/>
+		<!-- 2.3配置SQL映射文件 -->
+		<property name="mapperLocations">
+			<list>
+				<value>classpath:cn/smbms/dao/**/*.xml</value>
+			</list>
+		</property>
+	</bean>
+	<!-- 3.配置Dao,对dao接口的Mapper接口创建接口实现类，并注入SqlSessionFactory实例 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="cn.smbms.dao"></property>
+	</bean>
+	<!-- 4.配置扫描注解定义的业务Bean -->
+	<context:component-scan base-package="cn.smbms.dao,cn.smbms.service"/>
+	<!-- START 5.添加日志增强 START-->
+	<bean id="theLogger" class="cn.smbms.logger.SmbmsLogger"></bean>
+	<aop:config>
+		<!-- 创建切入点 -->
+		<aop:pointcut expression="execution(* cn.smbms.service..*.*(..))" id="pointcut"/>
+		<aop:advisor advice-ref="txAdvice" pointcut-ref="pointcut"/>
+		<!-- 引入各种增强 -->
+		<aop:aspect ref="theLogger">
+			<aop:before method="before" pointcut-ref="pointcut"/>
+			<aop:after-returning method="afterReturning" returning="result" pointcut-ref="pointcut"/>
+			<aop:after-throwing method="afterThrowing" throwing="e" pointcut-ref="pointcut"/>
+			<aop:after method="after" pointcut-ref="pointcut"/>
+		</aop:aspect>
+	</aop:config>
+	<!-- END 5.添加日志增强 END-->
+	
+	<!-- START 6.添加声明式事务增强 START -->
+	<!-- 定义事务管理器 -->
+	<bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"></property>
+	</bean>
+	<!-- 通过tx:advice标签为指定的事务管理器设置属性值 -->
+	<tx:advice id="txAdvice" transaction-manager="txManager">
+		<tx:attributes>
+			<tx:method name="get*" propagation="SUPPORTS"/>
+			<tx:method name="find*" propagation="SUPPORTS"/>
+			<tx:method name="insert*" propagation="REQUIRED" rollback-for="Exception"/>
+			<tx:method name="update*" propagation="REQUIRED" rollback-for="Exception"/>
+			<tx:method name="add*" propagation="REQUIRED" rollback-for="Exception"/>
+			<tx:method name="del*" propagation="REQUIRED" rollback-for="Exception"/>
+		</tx:attributes>
+	</tx:advice>
+	<!-- END 6.添加声明式事务增强 END -->
+</beans>
